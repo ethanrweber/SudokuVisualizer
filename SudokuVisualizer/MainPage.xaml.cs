@@ -39,7 +39,7 @@ namespace SudokuVisualizer
 
         private void makeGrid()
         {
-            grid = this.FindName("rootGrid") as Grid;
+            grid = this.FindName("sudokuGrid") as Grid;
 
             if(grid == null)
                 throw new Exception("Could not find root grid element");
@@ -65,6 +65,11 @@ namespace SudokuVisualizer
             string values = "003020600900305001001806400008102900700000008006708200002609500800203009005010300";
             for (int i = 0; i < values.Length; i++)
                 puzzle[i / n, i % n] = values[i] - '0';
+        }
+
+        private void solveButton_Click(object sender, RoutedEventArgs e)
+        {
+            puzzle.solveSudoku(this);
         }
     }
 }

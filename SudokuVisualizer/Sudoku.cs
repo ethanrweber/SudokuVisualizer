@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Windows.UI.Xaml.Controls;
 
 namespace SudokuVisualizer
 {
@@ -19,10 +21,18 @@ namespace SudokuVisualizer
             Grid = grid;
         }
 
-        public int this[int i, int j]
+        public int this[int i, int j, MainPage page=null]
         {
             get => Grid[i, j];
-            set => Grid[i, j] = value;
+            set
+            {
+                Grid[i, j] = value;
+                TextBox tb = (TextBox) page?.FindName($"{i}{j}");
+                if (tb != null)
+                {
+                    tb.Text = Grid[i, j].ToString();
+                }
+            } 
         }
 
     }
@@ -89,7 +99,7 @@ namespace SudokuVisualizer
             return boxes.All(verifyBox);
         }
 
-        public static bool solveSudoku(this Sudoku board)
+        public static bool solveSudoku(this Sudoku board, MainPage page)
         {
             int row = -1, col = -1;
             bool isEmpty = true;
@@ -117,11 +127,10 @@ namespace SudokuVisualizer
             {
                 if (isSafe(board, row, col, num))
                 {
-                    board[row, col] = num;
-                    if (solveSudoku(board))
+                    board[row, col, page] = num;
+                    if (solveSudoku(board, page))
                         return true;
-                    else
-                        board[row, col] = 0;
+                    board[row, col] = 0;
                 }
             }
 
