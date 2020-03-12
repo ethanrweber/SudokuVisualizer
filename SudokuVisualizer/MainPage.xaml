@@ -51,6 +51,7 @@
             <Button x:Name="isCorrectButton" Content="Check Answer" Click="isCorrectButton_Click" Margin="10"/>
             <Button x:Name="showErrors" Content="Show Errors" Click="ShowErrors_OnClick" Margin="10"/>
             <Button x:Name="newPuzzleButton" Content="New Puzzle" Margin="10" Click="newPuzzleButton_Click"/>
+            <Button x:Name="hintButton" Content="Random Hint" Margin="10" Click="hintButton_Click"/>
         </StackPanel>        
         
 

@@ -132,6 +132,21 @@ namespace SudokuVisualizer
                 }
         }
 
+        private void hintButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool filled = false;
+            while (!filled && !puzzle.isAnswer())
+            {
+                var rand = new Random();
+                int i = rand.Next(9), j = rand.Next(9);
+                if (puzzle[i, j] != puzzleAnswer[i, j])
+                {
+                    puzzle[i, j, this] = puzzleAnswer[i, j];
+                    filled = true;
+                }
+            }
+        }
+
         private async void newPuzzleButton_Click(object sender, RoutedEventArgs e)
         {
             var messageDialog = new MessageDialog("Are you sure? This will overwrite your current progress", "Create New Puzzle");
