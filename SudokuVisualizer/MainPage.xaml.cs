@@ -1,20 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -33,49 +22,57 @@ namespace SudokuVisualizer
         public MainPage()
         {
             this.InitializeComponent();
-            puzzle = new Sudoku(new int[n, n]);
 
-
-            makeSudoku();
             makeGrid();
-        }
-
-        private void makeSudoku()
-        {
-            string values = "003020600900305001001806400008102900700000008006708200002609500800203009005010300";
-            for (int i = 0; i < values.Length; i++)
-                puzzle[i / n, i % n] = values[i] - '0';
-
-            puzzleAnswer = new Sudoku(puzzle);
-            puzzleAnswer.solveSudoku();
+            makeSudoku(SudokuValues.getRandomSudoku());
         }
 
         private void makeGrid()
         {
             grid = this.FindName("sudokuGrid") as Grid;
 
-            if(grid == null)
-                throw new Exception("Could not find root grid element");
-
-            for (int k = 0; k < n * n; k++)
+            for (int i = 0; i < n; i++)
             {
-                int i = k / n, j = k % n;
-                TextBox tb = new TextBox();
-                tb.Name = $"{i}{j}";
-                tb.Text = puzzle[i, j] == 0 ? "" : $"{puzzle[i, j]}";
-                tb.FontSize = 40;
-                tb.TextAlignment = TextAlignment.Center;
-                tb.BorderThickness = new Thickness(1);
-                tb.BeforeTextChanging += textBox_BeforeTextChanging;
-                tb.TextChanging += textBox_TextChanging;
+                for (int j = 0; j < n; j++)
+                {
+                    TextBox tb = new TextBox();
+                    tb.Name = $"{i}{j}";
+                    tb.FontSize = 40;
+                    tb.TextAlignment = TextAlignment.Center;
 
-                grid.Children.Add(tb);
+                    double bottomBorder = (i + 1) % 3 == 0 && i < 8 ? 5 : 1;
+                    double rightBorder = (j + 1) % 3 == 0 && j < 8 ? 5 : 1;
+                    tb.BorderThickness = new Thickness(1, 1, rightBorder, bottomBorder);
 
-                Grid.SetRow(tb, i);
-                Grid.SetColumn(tb, j);
+                    tb.BeforeTextChanging += textBox_BeforeTextChanging;
+                    tb.TextChanging += textBox_TextChanging;
+
+                    grid.Children.Add(tb);
+
+                    Grid.SetRow(tb, i);
+                    Grid.SetColumn(tb, j);
+                }
             }
         }
 
+        private void makeSudoku(string values)
+        {
+            puzzle = new Sudoku(new int[n, n]);
+            puzzle.Fill(values);
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    TextBox tb = (TextBox) grid.FindName($"{i}{j}");
+                    tb.Text = puzzle[i, j] != 0 ? puzzle[i, j].ToString() : "";
+                }
+            }
+
+            puzzleAnswer = new Sudoku(puzzle);
+            puzzleAnswer.solveSudoku();
+        }
+        
         private (int, int) getTextBoxIJ(TextBox tb) => (tb.Name[0] - '0', tb.Name[1] - '0');
 
         // text changing: clear background
@@ -129,13 +126,23 @@ namespace SudokuVisualizer
                 for (int j = 0; j < n; j++)
                 {
                     TextBox tb = (TextBox) grid.FindName($"{i}{j}");
-
                     tb.Background = puzzle[i, j] != 0 && puzzle[i, j] != puzzleAnswer[i, j]
                         ? new SolidColorBrush(Colors.Red)
                         : null;
                 }
-                    
+        }
 
+        private async void newPuzzleButton_Click(object sender, RoutedEventArgs e)
+        {
+            var messageDialog = new MessageDialog("Are you sure? This will overwrite your current progress", "Create New Puzzle");
+
+            messageDialog.Commands.Add(new UICommand("Yes") { Id = 0 });
+            messageDialog.Commands.Add(new UICommand("No") { Id = 1 });
+
+            var result = await messageDialog.ShowAsync();
+
+            if((int) result.Id == 0)
+                makeSudoku(SudokuValues.getRandomSudoku());
         }
     }
 }

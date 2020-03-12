@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Windows.UI.Xaml.Controls;
 
 namespace SudokuVisualizer
@@ -45,6 +42,16 @@ namespace SudokuVisualizer
     public static class SudokuExtensions
     {
         private const int n = 9;
+
+        public static bool Fill(this Sudoku puzzle, string sudokuString)
+        {
+            if (sudokuString.Length != 81 || sudokuString.Any(c => !char.IsDigit(c)))
+                return false;
+
+            for (int i = 0; i < n*n; i++)
+                puzzle[i / n, i % n] = sudokuString[i] - '0';
+            return true;
+        }
 
         public static bool isAnswer(this Sudoku s)
         {
