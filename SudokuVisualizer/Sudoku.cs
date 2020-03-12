@@ -21,6 +21,11 @@ namespace SudokuVisualizer
             Grid = grid;
         }
 
+        public Sudoku(Sudoku puzzle)
+        {
+            Grid = (int[,]) puzzle.Grid.Clone();
+        }
+
         public int this[int i, int j, MainPage page=null]
         {
             get => Grid[i, j];
@@ -99,7 +104,32 @@ namespace SudokuVisualizer
             return boxes.All(verifyBox);
         }
 
-        public static bool solveSudoku(this Sudoku board, MainPage page)
+        public static bool hasErrors(this Sudoku board, Sudoku answerReference = null)
+        {
+            if (answerReference == null)
+            {
+                answerReference = new Sudoku(board);
+                answerReference.solveSudoku();
+            }
+
+            bool hasErrors = false;
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                    if (board[i, j] != 0 && board[i, j] != answerReference[i, j])
+                    {
+                        hasErrors = true;
+                        break;
+                    }
+
+                if (hasErrors)
+                    break;
+            }
+
+            return hasErrors;
+        }
+
+        public static bool solveSudoku(this Sudoku board, MainPage page=null)
         {
             int row = -1, col = -1;
             bool isEmpty = true;

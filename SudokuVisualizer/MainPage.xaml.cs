@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -22,7 +25,7 @@ namespace SudokuVisualizer
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private Sudoku puzzle;
+        private Sudoku puzzle, puzzleAnswer;
         private Grid grid;
 
         private const int n = 9;
@@ -35,6 +38,16 @@ namespace SudokuVisualizer
 
             makeSudoku();
             makeGrid();
+        }
+
+        private void makeSudoku()
+        {
+            string values = "003020600900305001001806400008102900700000008006708200002609500800203009005010300";
+            for (int i = 0; i < values.Length; i++)
+                puzzle[i / n, i % n] = values[i] - '0';
+
+            puzzleAnswer = new Sudoku(puzzle);
+            puzzleAnswer.solveSudoku();
         }
 
         private void makeGrid()
@@ -50,26 +63,79 @@ namespace SudokuVisualizer
                 TextBox tb = new TextBox();
                 tb.Name = $"{i}{j}";
                 tb.Text = puzzle[i, j] == 0 ? "" : $"{puzzle[i, j]}";
-                tb.IsReadOnly = true;
                 tb.FontSize = 40;
                 tb.TextAlignment = TextAlignment.Center;
                 tb.BorderThickness = new Thickness(1);
+                tb.BeforeTextChanging += textBox_BeforeTextChanging;
+                tb.TextChanging += textBox_TextChanging;
+
                 grid.Children.Add(tb);
+
                 Grid.SetRow(tb, i);
                 Grid.SetColumn(tb, j);
             }
         }
 
-        private void makeSudoku()
+        private (int, int) getTextBoxIJ(TextBox tb) => (tb.Name[0] - '0', tb.Name[1] - '0');
+
+        // text changing: clear background
+        // only allow a single digit 1-9
+        private void textBox_BeforeTextChanging(TextBox sender, TextBoxBeforeTextChangingEventArgs args)
         {
-            string values = "003020600900305001001806400008102900700000008006708200002609500800203009005010300";
-            for (int i = 0; i < values.Length; i++)
-                puzzle[i / n, i % n] = values[i] - '0';
+            sender.Background = null;
+
+            if (args.NewText.Length == 0)
+            {
+                (int i, int j) = getTextBoxIJ(sender);
+                puzzle[i, j] = 0;
+                return;
+            }
+
+            char digit = args.NewText[0];
+            args.Cancel = args.NewText.Length > 1 || digit - '0' < 1 || digit - '0' > 9;
+        }
+
+        // update puzzle with textbox value
+        private void textBox_TextChanging(TextBox sender, TextBoxTextChangingEventArgs args)
+        {
+            (int i, int j) = getTextBoxIJ(sender);
+
+            if (int.TryParse(sender.Text, out int value))
+                puzzle[i, j] = value;
         }
 
         private void solveButton_Click(object sender, RoutedEventArgs e)
         {
-            puzzle.solveSudoku(this);
+            for(int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                    puzzle[i, j, this] = puzzleAnswer[i, j];
+        }
+
+        private async void isCorrectButton_Click(object sender, RoutedEventArgs e)
+        {
+            string message = puzzle.hasErrors(puzzleAnswer) 
+                ? "Incorrect." 
+                : puzzle.isAnswer() 
+                    ? "Correct!" 
+                    : "Correct so far!";
+
+            var messageDialog = new MessageDialog(message);
+            await messageDialog.ShowAsync();
+        }
+
+        private void ShowErrors_OnClick(object sender, RoutedEventArgs e)
+        {
+            for(int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                {
+                    TextBox tb = (TextBox) grid.FindName($"{i}{j}");
+
+                    tb.Background = puzzle[i, j] != 0 && puzzle[i, j] != puzzleAnswer[i, j]
+                        ? new SolidColorBrush(Colors.Red)
+                        : null;
+                }
+                    
+
         }
     }
 }
