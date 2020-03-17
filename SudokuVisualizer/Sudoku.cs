@@ -32,7 +32,7 @@ namespace SudokuVisualizer
                 TextBox tb = (TextBox) page?.FindName($"{i}{j}");
                 if (tb != null)
                 {
-                    tb.Text = Grid[i, j].ToString();
+                    tb.Text = value != 0 ? Grid[i, j].ToString() : "";
                 }
             } 
         }

@@ -11,7 +11,8 @@
     <Grid x:Name="rootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height=".2*"/>
+            <RowDefinition Height=".1*"/>
+            <RowDefinition Height=".1*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width=".2*"/>
@@ -51,9 +52,13 @@
             <Button x:Name="isCorrectButton" Content="Check Answer" Click="isCorrectButton_Click" Margin="10"/>
             <Button x:Name="showErrors" Content="Show Errors" Click="ShowErrors_OnClick" Margin="10"/>
             <Button x:Name="newPuzzleButton" Content="New Puzzle" Margin="10" Click="newPuzzleButton_Click"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal">
             <Button x:Name="hintButton" Content="Random Hint" Margin="10" Click="hintButton_Click"/>
-        </StackPanel>        
-        
+            <Button x:Name="undoButton" Content="Undo" Margin="10" Click="UndoButton_OnClickButton_Click"/>
+            <Button x:Name="redoButton" Content="Redo" Margin="10" Click="RedoButton_OnClickButton_Click"/>
+        </StackPanel>
+
 
 
     </Grid>
