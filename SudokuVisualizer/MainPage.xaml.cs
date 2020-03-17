@@ -1,23 +1,24 @@
 ﻿using System;
+using Windows.System;
 using Windows.UI;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace SudokuVisualizer
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainPage : Page
     {
         private Sudoku puzzle, puzzleAnswer;
         private Grid grid;
 
         private const int n = 9;
+
+        /****************************************************
+         * Page Initialization
+         ****************************************************/
 
         public MainPage()
         {
@@ -36,16 +37,20 @@ namespace SudokuVisualizer
                 for (int j = 0; j < n; j++)
                 {
                     TextBox tb = new TextBox();
+                    double bottomBorder = (i + 1) % 3 == 0 && i < 8 ? 5 : 1;
+                    double rightBorder = (j + 1) % 3 == 0 && j < 8 ? 5 : 1;
+
+                    // textbox properties
                     tb.Name = $"{i}{j}";
                     tb.FontSize = 40;
                     tb.TextAlignment = TextAlignment.Center;
-
-                    double bottomBorder = (i + 1) % 3 == 0 && i < 8 ? 5 : 1;
-                    double rightBorder = (j + 1) % 3 == 0 && j < 8 ? 5 : 1;
                     tb.BorderThickness = new Thickness(1, 1, rightBorder, bottomBorder);
+                    tb.MaxLength = 1;
 
+                    // textbox events
                     tb.BeforeTextChanging += textBox_BeforeTextChanging;
                     tb.TextChanging += textBox_TextChanging;
+                    tb.KeyDown += textbox_MoveCursor;
 
                     grid.Children.Add(tb);
 
@@ -55,6 +60,8 @@ namespace SudokuVisualizer
             }
         }
 
+        // given a string of 81 digits, fill in a sudoku puzzle and display it on screen
+        // solve it and save the answer in the background to use as a reference
         private void makeSudoku(string values)
         {
             puzzle = new Sudoku(new int[n, n]);
@@ -72,7 +79,13 @@ namespace SudokuVisualizer
             puzzleAnswer = new Sudoku(puzzle);
             puzzleAnswer.solveSudoku();
         }
-        
+
+
+        /****************************************************
+         * TextBox Controls
+         ****************************************************/
+
+        // gets the row / column of a textbox in the main grid and returns them as a tuple
         private (int, int) getTextBoxIJ(TextBox tb) => (tb.Name[0] - '0', tb.Name[1] - '0');
 
         // text changing: clear background
@@ -89,7 +102,7 @@ namespace SudokuVisualizer
             }
 
             char digit = args.NewText[0];
-            args.Cancel = args.NewText.Length > 1 || digit - '0' < 1 || digit - '0' > 9;
+            args.Cancel = digit - '0' < 1 || digit - '0' > 9;
         }
 
         // update puzzle with textbox value
@@ -101,6 +114,53 @@ namespace SudokuVisualizer
                 puzzle[i, j] = value;
         }
 
+        // move the cursor to a neighboring cell when pressing arrow keys or wasd
+        private void textbox_MoveCursor(object sender, RoutedEventArgs e)
+        {
+            var keyEvent = e as KeyRoutedEventArgs;
+            (int i, int j) = getTextBoxIJ((TextBox) sender);
+
+
+            int dCol = 0, dRow = 0;
+            switch (keyEvent?.Key)
+            {
+                case VirtualKey.W:
+                case VirtualKey.Up:
+                    dCol--;
+                    break;
+                case VirtualKey.S:
+                case VirtualKey.Down:
+                    dCol++;
+                    break;
+                case VirtualKey.D:
+                case VirtualKey.Right:
+                    dRow++;
+                    break;
+                case VirtualKey.A:
+                case VirtualKey.Left:
+                    dRow--;
+                    break;
+                default:
+                    return;
+            }
+
+            i = (i + dCol + n) % n;
+            j = (j + dRow + n) % n;
+
+            TextBox nextTextBox = (TextBox) grid.FindName($"{i}{j}");
+            if (nextTextBox != null)
+            {
+                nextTextBox.Focus(FocusState.Programmatic);
+                nextTextBox.SelectAll();
+            }
+        }
+
+
+        /****************************************************
+         * Button Controls
+         ****************************************************/
+
+        // fill in all values of the puzzle with the answer
         private void solveButton_Click(object sender, RoutedEventArgs e)
         {
             for(int i = 0; i < n; i++)
@@ -108,6 +168,7 @@ namespace SudokuVisualizer
                     puzzle[i, j, this] = puzzleAnswer[i, j];
         }
 
+        // validate the puzzle
         private async void isCorrectButton_Click(object sender, RoutedEventArgs e)
         {
             string message = puzzle.hasErrors(puzzleAnswer) 
@@ -120,6 +181,7 @@ namespace SudokuVisualizer
             await messageDialog.ShowAsync();
         }
 
+        // highlight all incorrect cells red on screen
         private void ShowErrors_OnClick(object sender, RoutedEventArgs e)
         {
             for(int i = 0; i < n; i++)
@@ -132,6 +194,7 @@ namespace SudokuVisualizer
                 }
         }
 
+        // fill in a random, unfilled cell with its correct value
         private void hintButton_Click(object sender, RoutedEventArgs e)
         {
             bool filled = false;
@@ -147,6 +210,8 @@ namespace SudokuVisualizer
             }
         }
 
+        // replace the current puzzle with a new one from the stored values
+        // prompts the user to confirm before replacing puzzle
         private async void newPuzzleButton_Click(object sender, RoutedEventArgs e)
         {
             var messageDialog = new MessageDialog("Are you sure? This will overwrite your current progress", "Create New Puzzle");
@@ -159,5 +224,6 @@ namespace SudokuVisualizer
             if((int) result.Id == 0)
                 makeSudoku(SudokuValues.getRandomSudoku());
         }
+
     }
 }
