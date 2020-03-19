@@ -26,15 +26,7 @@ namespace SudokuVisualizer
         public int this[int i, int j, MainPage page=null]
         {
             get => Grid[i, j];
-            set
-            {
-                Grid[i, j] = value;
-                TextBox tb = (TextBox) page?.FindName($"{i}{j}");
-                if (tb != null)
-                {
-                    tb.Text = value != 0 ? Grid[i, j].ToString() : "";
-                }
-            } 
+            set => Grid[i, j] = value;
         }
 
     }
@@ -42,16 +34,6 @@ namespace SudokuVisualizer
     public static class SudokuExtensions
     {
         private const int n = 9;
-
-        public static bool Fill(this Sudoku puzzle, string sudokuString)
-        {
-            if (sudokuString.Length != 81 || sudokuString.Any(c => !char.IsDigit(c)))
-                return false;
-
-            for (int i = 0; i < n*n; i++)
-                puzzle[i / n, i % n] = sudokuString[i] - '0';
-            return true;
-        }
 
         public static bool isAnswer(this Sudoku s)
         {

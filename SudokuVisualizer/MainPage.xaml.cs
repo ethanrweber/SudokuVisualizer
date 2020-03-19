@@ -13,16 +13,19 @@ namespace SudokuVisualizer
 {
     public sealed partial class MainPage : Page
     {
+
+#region global variables
+
         private Sudoku puzzle, puzzleAnswer;
         private Grid grid;
         private Stack<(int, int, int)> userInputHistory, undoHistory;
 
         private const int n = 9;
-        private const int blankCellChar = 0;
+        private const int blankCellNum = 0;
 
-        /****************************************************
-         * Page Initialization
-         ****************************************************/
+#endregion
+
+#region page initialization and controls
 
         public MainPage()
         {
@@ -32,6 +35,7 @@ namespace SudokuVisualizer
             makeSudoku(SudokuValues.getRandomSudoku());
         }
 
+        // initialize the grid on the main page with a 9x9 grid of textboxes and set their properties/events
         private void makeGrid()
         {
             grid = this.FindName("sudokuGrid") as Grid;
@@ -41,13 +45,13 @@ namespace SudokuVisualizer
                 for (int j = 0; j < n; j++)
                 {
                     TextBox tb = new TextBox();
-                    double bottomBorder = (i + 1) % 3 == 0 && i < 8 ? 5 : 1;
-                    double rightBorder = (j + 1) % 3 == 0 && j < 8 ? 5 : 1;
 
                     // textbox properties
                     tb.Name = $"{i}{j}";
                     tb.FontSize = 40;
                     tb.TextAlignment = TextAlignment.Center;
+                    double bottomBorder = (i + 1) % 3 == 0 && i < 8 ? 5 : 1,
+                           rightBorder  = (j + 1) % 3 == 0 && j < 8 ? 5 : 1;
                     tb.BorderThickness = new Thickness(1, 1, rightBorder, bottomBorder);
                     tb.MaxLength = 1;
 
@@ -72,14 +76,13 @@ namespace SudokuVisualizer
             undoHistory = new Stack<(int, int, int)>();
 
             puzzle = new Sudoku(new int[n, n]);
-            puzzle.Fill(values);
 
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < n; j++)
                 {
-                    TextBox tb = getTextBoxFromIJ(i, j);
-                    tb.Text = puzzle[i, j] != blankCellChar ? puzzle[i, j].ToString() : "";
+                    int value = values[i * n + j] - '0';
+                    updateSudokuText(i, j, value);
                 }
             }
 
@@ -90,10 +93,20 @@ namespace SudokuVisualizer
             puzzleAnswer.solveSudoku();
         }
 
+        private void updateSudokuText(int i, int j, int newValue)
+        {
+            if (i < 0 || i > n || j < 0 || j > n || newValue < 0 || newValue > n)
+                throw new Exception("Invalid value");
 
-        /****************************************************
-         * TextBox Controls
-         ****************************************************/
+            puzzle[i, j] = newValue;
+
+            TextBox tb = getTextBoxFromIJ(i, j);
+            tb.Text = newValue > 0 ? newValue.ToString() : "";
+        }
+
+#endregion
+
+#region textbox controls
 
         // gets the row / column of a textbox in the main grid and returns them as a tuple
         private (int, int) getIJFromTextBox(TextBox tb) => (tb.Name[0] - '0', tb.Name[1] - '0');
@@ -105,16 +118,18 @@ namespace SudokuVisualizer
         {
             sender.Background = null;
 
+            (int i, int j) = getIJFromTextBox(sender);
+
             if (args.NewText.Length == 0)
             {
-                (int i, int j) = getIJFromTextBox(sender);
-                userInputHistory.Push((i, j, blankCellChar));
-                puzzle[i, j] = blankCellChar;
-                return;
+                userInputHistory.Push((i, j, blankCellNum));
+                puzzle[i, j] = blankCellNum;
             }
-
-            char digit = args.NewText[0];
-            args.Cancel = digit - '0' < 1 || digit - '0' > 9;
+            else
+            {
+                int digit = args.NewText[0] - '0';
+                args.Cancel = digit < 1 || digit > n;
+            }
         }
 
         // update puzzle with textbox value
@@ -124,8 +139,7 @@ namespace SudokuVisualizer
 
             if (int.TryParse(sender.Text, out int newValue))
             {
-                int currentValue = puzzle[i, j];
-                userInputHistory.Push((i, j, currentValue));
+                userInputHistory.Push((i, j, puzzle[i, j]));
                 puzzle[i, j] = newValue;
             }
         }
@@ -136,32 +150,32 @@ namespace SudokuVisualizer
             var keyEvent = e as KeyRoutedEventArgs;
             (int i, int j) = getIJFromTextBox((TextBox) sender);
 
-            int dCol = 0, dRow = 0;
+            int dRow = 0, dCol = 0;
             switch (keyEvent?.Key)
             {
                 case VirtualKey.W:
                 case VirtualKey.Up:
-                    dCol--;
+                    dRow--;
                     break;
                 case VirtualKey.S:
                 case VirtualKey.Down:
-                    dCol++;
+                    dRow++;
                     break;
                 case VirtualKey.D:
                 case VirtualKey.Right:
-                    dRow++;
+                    dCol++;
                     break;
                 case VirtualKey.A:
                 case VirtualKey.Left:
-                    dRow--;
+                    dCol--;
                     break;
                 default:
                     return;
             }
 
             // mod operation allows wrapping around screen
-            i = (i + dCol + n) % n;
-            j = (j + dRow + n) % n;
+            i = (i + dRow + n) % n;
+            j = (j + dCol + n) % n;
 
             TextBox nextTextBox = (TextBox) grid.FindName($"{i}{j}");
             if (nextTextBox != null)
@@ -171,17 +185,16 @@ namespace SudokuVisualizer
             }
         }
 
+#endregion
 
-        /****************************************************
-         * Button Controls
-         ****************************************************/
+#region button controls
 
         // fill in all values of the puzzle with the answer
         private void solveButton_Click(object sender, RoutedEventArgs e)
         {
             for(int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
-                    puzzle[i, j, this] = puzzleAnswer[i, j];
+                    updateSudokuText(i, j, puzzleAnswer[i, j]);
         }
 
         // validate the puzzle
@@ -204,7 +217,7 @@ namespace SudokuVisualizer
                 for (int j = 0; j < n; j++)
                 {
                     TextBox tb = getTextBoxFromIJ(i, j);
-                    tb.Background = puzzle[i, j] != blankCellChar && puzzle[i, j] != puzzleAnswer[i, j]
+                    tb.Background = puzzle[i, j] != blankCellNum && puzzle[i, j] != puzzleAnswer[i, j]
                         ? new SolidColorBrush(Colors.Red)
                         : null;
                 }
@@ -220,7 +233,7 @@ namespace SudokuVisualizer
                 int i = rand.Next(9), j = rand.Next(9);
                 if (puzzle[i, j] != puzzleAnswer[i, j])
                 {
-                    puzzle[i, j, this] = puzzleAnswer[i, j];
+                    updateSudokuText(i, j, puzzleAnswer[i, j]);
                     filled = true;
                 }
             }
@@ -252,7 +265,7 @@ namespace SudokuVisualizer
                 undoHistory.Push((i, j, currentValue));
 
                 // replace current value with previous value
-                puzzle[i, j, this] = previousValue;
+                updateSudokuText(i, j, previousValue);
             }
         }
 
@@ -265,8 +278,11 @@ namespace SudokuVisualizer
                 // textbox 'BeforeTextChanging' event already pushes value to user history stack
 
                 // replace current value with previous value
-                puzzle[i, j, this] = previouslyReplacedValue;
+                updateSudokuText(i, j, previouslyReplacedValue);
             }
         }
+
+#endregion
+
     }
 }
